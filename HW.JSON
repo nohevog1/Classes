@@ -1,1 +1,184 @@
 
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Map of Earthquakes in the past week</title>
+
+<div id="sliderContainer">
+    <input id="timeslide" type="range" min="0" max="11" value="0" step="1"/><br>
+    <span id="range">Monday</span>
+</div>
+
+<style>
+body {
+  position: absolute;
+  margin: 10px;
+  }
+svg {
+  background-color: #45b3b3;
+}
+.info {
+  font-family: sans-serif;
+  color: #0f0f0f;
+  position: absolute;
+  top: 450px;
+  left: 800px;
+}
+path {
+  fill: #595959;
+  stroke: #bfbfbf;
+  position: absolute;
+  
+}
+body {
+    position: absolute;
+    font-family: "Proxima Nova", "Montserrat", sans-serif;
+}
+h1, h2 {
+    position: absolute;
+    left: 10px;
+    font-size: 1.3em;
+    font-weight: 100;
+}
+h2 {
+    top: 30px;
+    font-size: 1em;
+}
+.hover {
+    fill: yellow;   
+}
+#sliderContainer {
+    text-align: center;
+    position: relative;
+    top: 600px;
+}
+</style>
+
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://d3js.org/topojson.v2.min.js"></script>
+
+<body>
+<script>
+var width = 1200, height = 700;
+var data;  // declare a global variable
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .on("mousemove", mousemoved);
+  
+ // Append g element to the SVG
+// "g" will contain geometry elements
+var layer = svg.append('g');
+var layer2 = svg.append('g');
+var info = d3.select("body").append("div")
+    .attr("class", "info");
+  
+// Set Projection Parameters
+var projection = d3.geoAlbersUsa();
+var path = d3.geoPath()
+    .projection(projection);
+
+ // Create GeoPath function that uses built-in D3 functionality to turn
+// lat/lon coordinates into screen coordinates
+var pathQuake = d3.geoPath()
+    .pointRadius(5)
+    .projection(projection);
+  
+// If you use this URL, you won't need your own copy of the data.
+//Loads the map dataset
+var url = "https://umbcvis.github.io/classes/class-03/us.json";
+  
+//Loads the earthquake dataset
+var usgs = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson";
+
+// Classic D3... Select non-existent elements, bind the data, append the elements, and apply attributes
+  
+d3.json(usgs, plotQuakes)
+d3.json(url, plotStates);
+ 
+  function plotQuakes(error, data) {
+  if (error) console.log(error);
+    
+ // Define the data earthquakes
+ var features = data.features;
+    
+var inputValue = null;
+var days = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+    
+ // Plot the earthquakes
+  layer2.selectAll("path.quake")//path
+      .data(features)//rodents_json.features
+    	.enter().append("path")//"path"
+  		.attr("fill", initialDate)
+      .attr("class", "quake")
+      .style('fill', 'crimson')
+  		.attr( "stroke", "blue" )
+      .attr("d", path)// "d", geoPath
+  		.attr( "class", "incident")
+    	
+}
+  
+function plotStates(error, json) {
+  // Create array of GeoJSON features -- this defines the global variable "data"
+  data = json.objects.us.geometries.map(function(d) { return topojson.feature(json, d); })
+  // Put your code here
+  // Plot the features
+  layer.selectAll("path")
+      .data(data)
+    	.enter()
+      .append("path")
+      .attr("d", path);
+}
+
+// when the input range changes update the value 
+d3.select("#timeslide").on("input", function() {
+    update(+this.value);
+});
+  
+
+
+// update the fill of each SVG of class "incident" with value
+function update(value) {
+    document.getElementById("range").innerHTML=days[value];
+    inputValue = days[value];
+    d3.selectAll(".incident")
+        .attr("fill", dateMatch);
+} 
+
+function dateMatch(data, value) {
+    var d = new Date(data.properties.OPEN_DT);
+    var days = days[d.getDay()];
+    if (inputValue == days) {
+        this.parentElement.appendChild(this);
+        return "red";
+    } else {
+        return "#999";
+    };
+}
+  
+function initialDate(d,i){
+    var d = new Date(d.properties.OPEN_DT);
+    var dy = d[d.getDay()];
+    if (dy == "Monday") {
+        this.parentElement.appendChild(this);
+        return "red";
+    } else {
+        return "#999";
+    };
+}
+
+function mousemoved() {
+info.text(formatLocation(projection.invert(d3.mouse(this)), projection.scale()));
+}
+  
+function formatLocation(p, k) {
+  var format = d3.format("." + Math.floor(Math.log(k) / 2 - 2) + "f");
+  return (p[1] < 0 ? format(-p[1]) + "°S" : format(p[1]) + "°N") + " "
+       + (p[0] < 0 ? format(-p[0]) + "°W" : format(p[0]) + "°E");
+}
+
+//Title of Map
+svg.append('text')
+   .attr('y', '92')
+  .style('font-size', '2em')
+   .text('Map of Earthquake in the US')
+</script>
